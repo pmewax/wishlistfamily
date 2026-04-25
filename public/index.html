@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wishlist</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="bg-ball bg-ball--1"></div>
+    <div class="bg-ball bg-ball--2"></div>
+    <div class="bg-ball bg-ball--3"></div>
+
+    <header class="topbar">
+      <div class="container topbar__inner">
+        <div class="brand">
+          <div class="brand__logo">🎁</div>
+          <div>
+            <div class="brand__title">Wishlist</div>
+            <div class="brand__subtitle">праздничный список желаемых подарков</div>
+          </div>
+        </div>
+
+        <button id="themeToggle" class="theme-toggle" type="button">🌙</button>
+      </div>
+    </header>
+
+    <main class="container page-main">
+      <section id="setupScreen" class="hero">
+        <div class="hero__intro">
+          <div class="hero__label">✨ Создай праздничный wishlist</div>
+          <h1 class="hero__title">Собери красивый список подарков для семьи, друзей и близких</h1>
+          <p class="hero__text">
+            Выбери праздник, название и участников. После создания можно отправить ссылку друзьям,
+            а они смогут бронировать подарки без регистрации.
+          </p>
+        </div>
+
+        <div class="panel panel--large">
+          <div class="panel__head">
+            <h2 class="panel__title">Создание списка</h2>
+            <p class="panel__text">Сначала укажи праздник и участников.</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="setupTitle">Название списка</label>
+              <input id="setupTitle" type="text" placeholder="Например: Новый год нашей семьи" />
+            </div>
+
+            <div class="field">
+              <label>Праздник</label>
+              <div id="occasionDropdown"></div>
+            </div>
+
+            <div id="customOccasionField" class="field field--wide hidden">
+              <label for="customOccasionInput">Название праздника</label>
+              <input id="customOccasionInput" type="text" placeholder="Например: Семейный вечер" />
+            </div>
+          </div>
+
+          <div class="members-block">
+            <div class="members-block__head">
+              <h3 class="members-block__title">Участники</h3>
+              <p class="panel__text">Добавь всех, для кого будут подарки.</p>
+            </div>
+
+            <div class="member-add">
+              <input id="memberNameInput" type="text" placeholder="Например: Мама, Папа, Аня" />
+              <button id="addMemberBtn" class="btn btn--secondary" type="button">Добавить</button>
+            </div>
+
+            <div id="membersList" class="members-list"></div>
+          </div>
+
+          <div class="actions">
+            <button id="createWishlistBtn" class="btn btn--primary" type="button">Создать список</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="wishlistScreen" class="wishlist hidden">
+        <div class="layout">
+          <section id="ownerTools" class="panel owner-panel hidden">
+            <div class="panel__head">
+              <h2 class="panel__title">Добавить подарок</h2>
+              <p class="panel__text">Выбери участника и заполни карточку подарка.</p>
+            </div>
+
+            <div class="form-grid">
+              <div class="field">
+                <label for="listTitleView">Название списка</label>
+                <input id="listTitleView" type="text" readonly />
+              </div>
+
+              <div class="field">
+                <label for="occasionView">Праздник</label>
+                <input id="occasionView" type="text" readonly />
+              </div>
+
+              <div class="field field--wide">
+                <label>Кому подарок</label>
+                <div id="memberDropdown"></div>
+              </div>
+
+              <div class="field field--wide">
+                <label for="itemTitleInput">Название подарка</label>
+                <input id="itemTitleInput" type="text" placeholder="Например: Наушники" />
+              </div>
+
+              <div class="field field--wide">
+                <label for="itemUrlInput">Ссылка на товар</label>
+                <input id="itemUrlInput" type="text" placeholder="https://..." />
+              </div>
+
+              <div class="field field--wide">
+                <label for="itemImgInput">Ссылка на фото</label>
+                <input id="itemImgInput" type="text" placeholder="https://...jpg" />
+              </div>
+            </div>
+
+            <div class="actions">
+              <button id="addGiftBtn" class="btn btn--primary" type="button">Добавить подарок</button>
+            </div>
+
+            <div class="share-block">
+              <div class="field share-block__field">
+                <label for="friendLinkInput">Ссылка для друзей</label>
+                <input id="friendLinkInput" type="text" readonly />
+              </div>
+              <button id="copyLinkBtn" class="btn btn--secondary" type="button">Копировать</button>
+            </div>
+          </section>
+
+          <section id="friendNote" class="panel friend-note hidden">
+            <div class="friend-note__icon">🎉</div>
+            <h2 class="panel__title">Выбери подарок и забронируй его</h2>
+            <p class="panel__text">Открой участника, посмотри его желания и выбери подарок.</p>
+          </section>
+
+          <section class="panel list-panel">
+            <div class="list-panel__head">
+              <div id="occasionChip" class="occasion-chip">Праздник</div>
+              <h1 id="listHeader" class="list-title">Wishlist</h1>
+              <p id="listDescription" class="panel__text">Праздничный список подарков.</p>
+            </div>
+
+            <div id="memberTabs" class="members-tabs"></div>
+
+            <div id="emptyState" class="empty-state">
+              <div class="empty-state__icon">🎀</div>
+              <div class="empty-state__title">Пока пусто</div>
+              <div class="empty-state__text">Добавь первый подарок для участника.</div>
+            </div>
+
+            <div id="itemsBox" class="items"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
