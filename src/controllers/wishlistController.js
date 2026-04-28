@@ -31,6 +31,7 @@ function normalizeMembers(members) {
     if (seen.has(key)) continue;
 
     seen.add(key);
+
     result.push({
       memberId: makeId("mem"),
       name
@@ -42,6 +43,18 @@ function normalizeMembers(members) {
 
 function getOwnerToken(req) {
   return req.headers["x-owner-token"] || req.body.ownerToken || req.query.ownerToken || "";
+}
+
+function publicWishlist(wishlist) {
+  return {
+    id: wishlist._id,
+    title: wishlist.title,
+    occasionKey: wishlist.occasionKey,
+    occasionLabel: wishlist.occasionLabel,
+    members: wishlist.members || [],
+    givers: wishlist.givers || [],
+    items: wishlist.items || []
+  };
 }
 
 export async function createWishlist(req, res) {
@@ -73,24 +86,18 @@ export async function createWishlist(req, res) {
       occasionLabel: cleanOccasionLabel,
       ownerToken,
       members: cleanMembers,
+      givers: [],
       items: []
     });
 
     return res.status(201).json({
       wishlistId: wishlist._id,
       ownerToken,
-      ownerUrl: `/ ?wishlist=${wishlist._id}&owner=${ownerToken}`.replace(" ", ""),
-      friendUrl: `/ ?wishlist=${wishlist._id}`.replace(" ", ""),
-      wishlist: {
-        id: wishlist._id,
-        title: wishlist.title,
-        occasionKey: wishlist.occasionKey,
-        occasionLabel: wishlist.occasionLabel,
-        members: wishlist.members,
-        items: wishlist.items
-      }
+      ownerUrl: `/?wishlist=${wishlist._id}&owner=${ownerToken}`,
+      friendUrl: `/?wishlist=${wishlist._id}`,
+      wishlist: publicWishlist(wishlist)
     });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ message: "Ошибка создания списка" });
   }
 }
@@ -103,14 +110,7 @@ export async function getWishlist(req, res) {
       return res.status(404).json({ message: "Список не найден" });
     }
 
-    return res.json({
-      id: wishlist._id,
-      title: wishlist.title,
-      occasionKey: wishlist.occasionKey,
-      occasionLabel: wishlist.occasionLabel,
-      members: wishlist.members,
-      items: wishlist.items
-    });
+    return res.json(publicWishlist(wishlist));
   } catch {
     return res.status(400).json({ message: "Некорректный id списка" });
   }
@@ -145,6 +145,7 @@ export async function addItem(req, res) {
     }
 
     const hasMember = wishlist.members.some((m) => m.memberId === cleanMemberId);
+
     if (!hasMember) {
       return res.status(400).json({ message: "Участник не найден" });
     }
@@ -160,6 +161,8 @@ export async function addItem(req, res) {
       url: cleanUrl,
       img: cleanImg,
       reserved: false,
+      reservedBy: "",
+      reservedByName: "",
       reservedAt: null
     });
 
@@ -190,6 +193,7 @@ export async function deleteItem(req, res) {
     }
 
     const before = wishlist.items.length;
+
     wishlist.items = wishlist.items.filter((item) => item.itemId !== itemId);
 
     if (before === wishlist.items.length) {
@@ -207,10 +211,60 @@ export async function deleteItem(req, res) {
   }
 }
 
+export async function addGiver(req, res) {
+  try {
+    const { id } = req.params;
+    const name = String(req.body.name || "").trim();
+
+    if (!name) {
+      return res.status(400).json({ message: "Имя обязательно" });
+    }
+
+    const wishlist = await Wishlist.findById(id);
+
+    if (!wishlist) {
+      return res.status(404).json({ message: "Список не найден" });
+    }
+
+    const existing = wishlist.givers.find(
+      (giver) => giver.name.toLowerCase() === name.toLowerCase()
+    );
+
+    if (existing) {
+      return res.json({
+        message: "Даритель уже существует",
+        giver: existing,
+        givers: wishlist.givers
+      });
+    }
+
+    if (wishlist.givers.length >= 3) {
+      return res.status(400).json({ message: "Можно добавить максимум 3 дарителя" });
+    }
+
+    const giver = {
+      giverId: makeId("giver"),
+      name
+    };
+
+    wishlist.givers.push(giver);
+
+    await wishlist.save();
+
+    return res.status(201).json({
+      message: "Даритель добавлен",
+      giver,
+      givers: wishlist.givers
+    });
+  } catch {
+    return res.status(500).json({ message: "Ошибка добавления дарителя" });
+  }
+}
+
 export async function toggleReservation(req, res) {
   try {
     const { id, itemId } = req.params;
-    const { reserved } = req.body;
+    const { reserved, giverId } = req.body;
 
     const wishlist = await Wishlist.findById(id);
 
@@ -224,8 +278,44 @@ export async function toggleReservation(req, res) {
       return res.status(404).json({ message: "Подарок не найден" });
     }
 
-    item.reserved = Boolean(reserved);
-    item.reservedAt = item.reserved ? new Date() : null;
+    const giver = wishlist.givers.find((g) => g.giverId === String(giverId || ""));
+
+    if (!giver) {
+      return res.status(400).json({ message: "Сначала выбери, кто дарит" });
+    }
+
+    const needReserve = Boolean(reserved);
+
+    if (needReserve) {
+      if (item.reserved && item.reservedBy !== giver.giverId) {
+        return res.status(403).json({
+          message: "Этот подарок уже забронировал другой человек"
+        });
+      }
+
+      item.reserved = true;
+      item.reservedBy = giver.giverId;
+      item.reservedByName = giver.name;
+      item.reservedAt = new Date();
+    } else {
+      if (!item.reserved) {
+        return res.json({
+          message: "Подарок уже свободен",
+          item
+        });
+      }
+
+      if (item.reservedBy !== giver.giverId) {
+        return res.status(403).json({
+          message: "Снять бронь может только тот, кто её поставил"
+        });
+      }
+
+      item.reserved = false;
+      item.reservedBy = "";
+      item.reservedByName = "";
+      item.reservedAt = null;
+    }
 
     await wishlist.save();
 
@@ -235,5 +325,102 @@ export async function toggleReservation(req, res) {
     });
   } catch {
     return res.status(500).json({ message: "Ошибка бронирования" });
+  }
+}
+
+function extractWbArticle(value) {
+  const text = String(value || "").trim();
+
+  const fromUrl = text.match(/catalog\/(\d+)\/detail/i);
+  if (fromUrl) return fromUrl[1];
+
+  const digits = text.match(/\d{6,}/);
+  if (digits) return digits[0];
+
+  return "";
+}
+
+function buildWbPaths(article, basketNumber) {
+  const nm = Number(article);
+  const vol = Math.floor(nm / 100000);
+  const part = Math.floor(nm / 1000);
+  const basket = String(basketNumber).padStart(2, "0");
+
+  return {
+    cardUrl: `https://basket-${basket}.wbcontent.net/vol${vol}/part${part}/${article}/info/ru/card.json`,
+    imageUrl: `https://basket-${basket}.wbcontent.net/vol${vol}/part${part}/${article}/images/c516x688/1.webp`
+  };
+}
+
+function normalizeWbTitle(data) {
+  const parts = [];
+
+  if (data?.imt_name) parts.push(data.imt_name);
+  if (!data?.imt_name && data?.subj_name) parts.push(data.subj_name);
+  if (data?.name && data.name !== data?.imt_name) parts.push(data.name);
+
+  return parts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+async function tryFetchWbCard(article) {
+  for (let basket = 1; basket <= 40; basket++) {
+    const paths = buildWbPaths(article, basket);
+
+    try {
+      const response = await fetch(paths.cardUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json"
+        }
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json();
+
+      return {
+        data,
+        cardUrl: paths.cardUrl,
+        imageUrl: paths.imageUrl
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+export async function parseWbProduct(req, res) {
+  try {
+    const article = extractWbArticle(req.body.value);
+
+    if (!article) {
+      return res.status(400).json({
+        message: "Вставь ссылку Wildberries или артикул"
+      });
+    }
+
+    const result = await tryFetchWbCard(article);
+
+    if (!result) {
+      return res.status(404).json({
+        message: "Товар WB не найден"
+      });
+    }
+
+    const title = normalizeWbTitle(result.data);
+
+    return res.json({
+      article,
+      title: title || `Товар Wildberries ${article}`,
+      url: `https://www.wildberries.ru/catalog/${article}/detail.aspx`,
+      img: result.imageUrl,
+      cardUrl: result.cardUrl
+    });
+  } catch {
+    return res.status(500).json({
+      message: "Ошибка парсинга WB"
+    });
   }
 }

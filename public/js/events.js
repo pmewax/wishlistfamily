@@ -1,8 +1,8 @@
-import { createWishlist, addItem } from "./api.js";
+import { createWishlist, addItem, addGiver, parseWbProduct } from "./api.js";
 import { occasionOptions } from "./constants.js";
 import { dom } from "./dom.js";
 import { state, draftMembers, ownerToken } from "./state.js";
-import { renderDraftMembers, applyTheme } from "./render.js";
+import { render, renderDraftMembers, applyTheme } from "./render.js";
 import { loadWishlist } from "./wishlist.js";
 import { occasionDropdown } from "./main.js";
 
@@ -73,6 +73,31 @@ export function initEvents() {
     }
   });
 
+  dom.parseWbBtn?.addEventListener("click", async () => {
+    const value = dom.itemUrlInput.value.trim() || dom.itemTitleInput.value.trim();
+
+    if (!value) {
+      alert("Вставь ссылку WB или артикул");
+      return;
+    }
+
+    try {
+      dom.parseWbBtn.disabled = true;
+      dom.parseWbBtn.textContent = "Ищу...";
+
+      const product = await parseWbProduct(value);
+
+      dom.itemTitleInput.value = product.title || "";
+      dom.itemUrlInput.value = product.url || "";
+      dom.itemImgInput.value = product.img || "";
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      dom.parseWbBtn.disabled = false;
+      dom.parseWbBtn.textContent = "Заполнить с WB";
+    }
+  });
+
   dom.addGiftBtn.addEventListener("click", async () => {
     const title = dom.itemTitleInput.value.trim();
     const url = dom.itemUrlInput.value.trim();
@@ -106,6 +131,33 @@ export function initEvents() {
     }
   });
 
+  dom.addGiverBtn?.addEventListener("click", async () => {
+    const name = dom.giverNameInput.value.trim();
+
+    if (!name) {
+      alert("Введи имя");
+      return;
+    }
+
+    try {
+      const data = await addGiver(state.wishlist.id, name);
+
+      state.activeGiverId = data.giver.giverId;
+      dom.giverNameInput.value = "";
+
+      await loadWishlist();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  dom.giverNameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      dom.addGiverBtn.click();
+    }
+  });
+
   dom.copyLinkBtn?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(dom.friendLinkInput.value);
@@ -124,4 +176,9 @@ export function initEvents() {
     state.theme = state.theme === "dark" ? "light" : "dark";
     applyTheme();
   });
+}
+
+export function selectGiver(giverId) {
+  state.activeGiverId = giverId;
+  render();
 }

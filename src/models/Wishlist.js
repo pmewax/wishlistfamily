@@ -16,6 +16,22 @@ const MemberSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const GiverSchema = new mongoose.Schema(
+  {
+    giverId: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 60
+    }
+  },
+  { _id: false }
+);
+
 const ItemSchema = new mongoose.Schema(
   {
     itemId: {
@@ -45,6 +61,14 @@ const ItemSchema = new mongoose.Schema(
     reserved: {
       type: Boolean,
       default: false
+    },
+    reservedBy: {
+      type: String,
+      default: ""
+    },
+    reservedByName: {
+      type: String,
+      default: ""
     },
     reservedAt: {
       type: Date,
@@ -80,6 +104,10 @@ const WishlistSchema = new mongoose.Schema(
     },
     members: {
       type: [MemberSchema],
+      default: []
+    },
+    givers: {
+      type: [GiverSchema],
       default: []
     },
     items: {

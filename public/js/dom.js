@@ -18,6 +18,7 @@ export const dom = {
   itemUrlInput: document.getElementById("itemUrlInput"),
   itemImgInput: document.getElementById("itemImgInput"),
   addGiftBtn: document.getElementById("addGiftBtn"),
+  parseWbBtn: document.getElementById("parseWbBtn"),
   friendLinkInput: document.getElementById("friendLinkInput"),
   copyLinkBtn: document.getElementById("copyLinkBtn"),
 
@@ -30,5 +31,11 @@ export const dom = {
   themeToggle: document.getElementById("themeToggle"),
 
   occasionDropdown: document.getElementById("occasionDropdown"),
-  memberDropdown: document.getElementById("memberDropdown")
+  memberDropdown: document.getElementById("memberDropdown"),
+
+  giverGate: document.getElementById("giverGate"),
+  giverList: document.getElementById("giverList"),
+  giverNameInput: document.getElementById("giverNameInput"),
+  addGiverBtn: document.getElementById("addGiverBtn"),
+  selectedGiverName: document.getElementById("selectedGiverName")
 };

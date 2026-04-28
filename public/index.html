@@ -105,13 +105,16 @@
               </div>
 
               <div class="field field--wide">
-                <label for="itemTitleInput">Название подарка</label>
-                <input id="itemTitleInput" type="text" placeholder="Например: Наушники" />
+                <label for="itemUrlInput">Ссылка WB или артикул</label>
+                <div class="parser-row">
+                  <input id="itemUrlInput" type="text" placeholder="https://www.wildberries.ru/catalog/... или 758042925" />
+                  <button id="parseWbBtn" class="btn btn--secondary" type="button">Заполнить с WB</button>
+                </div>
               </div>
 
               <div class="field field--wide">
-                <label for="itemUrlInput">Ссылка на товар</label>
-                <input id="itemUrlInput" type="text" placeholder="https://..." />
+                <label for="itemTitleInput">Название подарка</label>
+                <input id="itemTitleInput" type="text" placeholder="Например: Наушники" />
               </div>
 
               <div class="field field--wide">
@@ -136,7 +139,29 @@
           <section id="friendNote" class="panel friend-note hidden">
             <div class="friend-note__icon">🎉</div>
             <h2 class="panel__title">Выбери подарок и забронируй его</h2>
-            <p class="panel__text">Открой участника, посмотри его желания и выбери подарок.</p>
+            <p class="panel__text">Сначала выбери, кто будет дарить, потом забронируй подарок.</p>
+          </section>
+
+          <section id="giverGate" class="panel giver-gate hidden">
+            <div class="panel__head">
+              <h2 class="panel__title">Кто будет дарить?</h2>
+              <p class="panel__text">
+                Выбери своё имя или добавь новое. Бронь будет закреплена за выбранным человеком.
+              </p>
+            </div>
+
+            <div id="selectedGiverName" class="selected-giver">
+              Сначала выбери, кто ты
+            </div>
+
+            <div id="giverList" class="giver-list"></div>
+
+            <div class="giver-form">
+              <input id="giverNameInput" type="text" placeholder="Например: Артём" />
+              <button id="addGiverBtn" class="btn btn--secondary" type="button">
+                Добавить себя
+              </button>
+            </div>
           </section>
 
           <section class="panel list-panel">
@@ -161,6 +186,6 @@
     </main>
   </div>
 
-  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>

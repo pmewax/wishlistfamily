@@ -4,6 +4,7 @@ import { fallbackImage } from "./utils.js";
 import { deleteItem, setReservation } from "./api.js";
 import { loadWishlist } from "./wishlist.js";
 import { memberDropdown } from "./main.js";
+import { selectGiver } from "./events.js";
 
 export function applyTheme() {
   document.body.classList.toggle("light", state.theme === "light");
@@ -21,6 +22,7 @@ export function renderDraftMembers() {
       <span>${member}</span>
       <button type="button" data-index="${index}">×</button>
     `;
+
     dom.membersList.appendChild(el);
   });
 
@@ -36,10 +38,18 @@ function getMemberItems(memberId) {
   return state.wishlist.items.filter((item) => item.memberId === memberId);
 }
 
-function createBadge(reserved) {
+function getActiveGiver() {
+  return state.wishlist.givers?.find((g) => g.giverId === state.activeGiverId);
+}
+
+function createBadge(item) {
   const badge = document.createElement("div");
-  badge.className = `badge ${reserved ? "badge--warning" : "badge--success"}`;
-  badge.textContent = reserved ? "Уже занят" : "Свободен";
+
+  badge.className = `badge ${item.reserved ? "badge--warning" : "badge--success"}`;
+  badge.textContent = item.reserved
+    ? `Занят: ${item.reservedByName || "кто-то"}`
+    : "Свободен";
+
   return badge;
 }
 
@@ -69,16 +79,43 @@ function createCard(item, memberName) {
 
   const right = document.createElement("div");
   right.className = "item-card__right";
-  right.appendChild(createBadge(item.reserved));
+  right.appendChild(createBadge(item));
 
   if (state.mode === "friend") {
     const button = document.createElement("button");
-    button.className = item.reserved ? "btn--unreserve" : "btn--reserve";
-    button.textContent = item.reserved ? "Снять бронь" : "Забронировать";
+
+    const isMyReservation = item.reservedBy === state.activeGiverId;
+
+    if (!state.activeGiverId) {
+      button.className = "btn--reserve";
+      button.textContent = "Сначала выбери себя";
+      button.disabled = true;
+    } else if (!item.reserved) {
+      button.className = "btn--reserve";
+      button.textContent = "Забронировать";
+    } else if (isMyReservation) {
+      button.className = "btn--unreserve";
+      button.textContent = "Снять бронь";
+    } else {
+      button.className = "btn--disabled";
+      button.textContent = "Занято другим";
+      button.disabled = true;
+    }
 
     button.addEventListener("click", async () => {
+      if (!state.activeGiverId) {
+        alert("Сначала выбери, кто дарит");
+        return;
+      }
+
       try {
-        await setReservation(state.wishlist.id, item.itemId, !item.reserved);
+        await setReservation(
+          state.wishlist.id,
+          item.itemId,
+          !item.reserved,
+          state.activeGiverId
+        );
+
         await loadWishlist();
       } catch (error) {
         alert(error.message);
@@ -106,6 +143,7 @@ function createCard(item, memberName) {
   }
 
   row.append(image, content, right);
+
   return row;
 }
 
@@ -114,6 +152,7 @@ function renderMemberTabs() {
 
   state.wishlist.members.forEach((member) => {
     const btn = document.createElement("button");
+
     btn.type = "button";
     btn.className = `member-tab ${
       member.memberId === state.activeMemberId ? "active" : ""
@@ -132,6 +171,39 @@ function renderMemberTabs() {
 
     dom.memberTabs.appendChild(btn);
   });
+}
+
+function renderGivers() {
+  if (!dom.giverGate || state.mode !== "friend") return;
+
+  dom.giverGate.classList.remove("hidden");
+  dom.giverList.innerHTML = "";
+
+  const givers = state.wishlist.givers || [];
+
+  givers.forEach((giver) => {
+    const btn = document.createElement("button");
+
+    btn.type = "button";
+    btn.className = `giver-btn ${
+      giver.giverId === state.activeGiverId ? "active" : ""
+    }`;
+    btn.textContent = giver.name;
+
+    btn.addEventListener("click", () => {
+      selectGiver(giver.giverId);
+    });
+
+    dom.giverList.appendChild(btn);
+  });
+
+  const activeGiver = getActiveGiver();
+
+  if (dom.selectedGiverName) {
+    dom.selectedGiverName.textContent = activeGiver
+      ? `Сейчас выбран: ${activeGiver.name}`
+      : "Сначала выбери, кто ты";
+  }
 }
 
 function renderItems() {
@@ -169,6 +241,10 @@ function renderOwner() {
   dom.ownerTools.classList.remove("hidden");
   dom.friendNote.classList.add("hidden");
 
+  if (dom.giverGate) {
+    dom.giverGate.classList.add("hidden");
+  }
+
   dom.listTitleView.value = state.wishlist.title;
   dom.occasionView.value = state.wishlist.occasionLabel;
 
@@ -194,6 +270,7 @@ function renderOwner() {
 function renderFriend() {
   dom.ownerTools.classList.add("hidden");
   dom.friendNote.classList.remove("hidden");
+  renderGivers();
 }
 
 export function render() {
@@ -205,6 +282,19 @@ export function render() {
 
   if (!state.wishlist) return;
 
+  setupBaseView();
+
+  renderMemberTabs();
+  renderItems();
+
+  if (state.mode === "owner") {
+    renderOwner();
+  } else {
+    renderFriend();
+  }
+}
+
+function setupBaseView() {
   dom.setupScreen.classList.add("hidden");
   dom.wishlistScreen.classList.remove("hidden");
 
@@ -214,18 +304,9 @@ export function render() {
   dom.listDescription.textContent =
     state.mode === "owner"
       ? "Добавляй подарки, удаляй лишнее и делись ссылкой."
-      : "Выбери участника и забронируй подарок.";
+      : "Выбери себя, участника и забронируй подарок.";
 
   if (!state.activeMemberId && state.wishlist.members.length) {
     state.activeMemberId = state.wishlist.members[0].memberId;
-  }
-
-  renderMemberTabs();
-  renderItems();
-
-  if (state.mode === "owner") {
-    renderOwner();
-  } else {
-    renderFriend();
   }
 }

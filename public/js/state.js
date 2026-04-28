@@ -7,7 +7,8 @@ export const state = {
   theme: localStorage.getItem("wishlist_theme") || "dark",
   mode: wishlistId ? (ownerToken ? "owner" : "friend") : "create",
   wishlist: null,
-  activeMemberId: ""
+  activeMemberId: "",
+  activeGiverId: ""
 };
 
 export const draftMembers = [];
