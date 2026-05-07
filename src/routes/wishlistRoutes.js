@@ -5,6 +5,7 @@ import {
   addItem,
   deleteItem,
   addGiver,
+  loginGiver,
   toggleReservation,
   parseWbProduct
 } from "../controllers/wishlistController.js";
@@ -12,7 +13,6 @@ import {
 const router = Router();
 
 router.post("/", createWishlist);
-
 router.post("/parse/wb", parseWbProduct);
 
 router.get("/:id", getWishlist);
@@ -21,6 +21,7 @@ router.post("/:id/items", addItem);
 router.delete("/:id/items/:itemId", deleteItem);
 
 router.post("/:id/givers", addGiver);
+router.post("/:id/givers/login", loginGiver);
 
 router.patch("/:id/items/:itemId/reservation", toggleReservation);
 

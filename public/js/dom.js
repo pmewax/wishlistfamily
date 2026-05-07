@@ -36,6 +36,17 @@ export const dom = {
   giverGate: document.getElementById("giverGate"),
   giverList: document.getElementById("giverList"),
   giverNameInput: document.getElementById("giverNameInput"),
+  giverPinInput: document.getElementById("giverPinInput"),
   addGiverBtn: document.getElementById("addGiverBtn"),
-  selectedGiverName: document.getElementById("selectedGiverName")
+  selectedGiverName: document.getElementById("selectedGiverName"),
+
+  toastRoot: document.getElementById("toastRoot"),
+
+  pinModal: document.getElementById("pinModal"),
+  pinModalBackdrop: document.getElementById("pinModalBackdrop"),
+  pinModalClose: document.getElementById("pinModalClose"),
+  pinModalCancel: document.getElementById("pinModalCancel"),
+  pinModalSubmit: document.getElementById("pinModalSubmit"),
+  pinModalInput: document.getElementById("pinModalInput"),
+  pinModalText: document.getElementById("pinModalText")
 };

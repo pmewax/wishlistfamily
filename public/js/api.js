@@ -48,19 +48,27 @@ export function deleteItem(wishlistId, itemId, ownerToken) {
   });
 }
 
-export function addGiver(wishlistId, name) {
+export function addGiver(wishlistId, name, pin) {
   return request(`${API_BASE}/${wishlistId}/givers`, {
     method: "POST",
-    body: JSON.stringify({ name })
+    body: JSON.stringify({ name, pin })
   });
 }
 
-export function setReservation(wishlistId, itemId, reserved, giverId) {
+export function loginGiver(wishlistId, giverId, pin) {
+  return request(`${API_BASE}/${wishlistId}/givers/login`, {
+    method: "POST",
+    body: JSON.stringify({ giverId, pin })
+  });
+}
+
+export function setReservation(wishlistId, itemId, reserved, giverId, giverToken) {
   return request(`${API_BASE}/${wishlistId}/items/${itemId}/reservation`, {
     method: "PATCH",
     body: JSON.stringify({
       reserved,
-      giverId
+      giverId,
+      giverToken
     })
   });
 }

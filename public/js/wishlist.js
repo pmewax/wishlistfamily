@@ -1,6 +1,7 @@
 import { getWishlist } from "./api.js";
 import { state, wishlistId } from "./state.js";
 import { render } from "./render.js";
+import { showToast } from "./ui.js";
 
 export async function loadWishlist() {
   try {
@@ -12,6 +13,6 @@ export async function loadWishlist() {
 
     render();
   } catch (error) {
-    alert(error.message);
+    showToast(error.message, "error");
   }
 }

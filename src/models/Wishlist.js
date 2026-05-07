@@ -27,6 +27,18 @@ const GiverSchema = new mongoose.Schema(
       required: true,
       trim: true,
       maxlength: 60
+    },
+    pinSalt: {
+      type: String,
+      required: true
+    },
+    pinHash: {
+      type: String,
+      required: true
+    },
+    tokenHash: {
+      type: String,
+      default: ""
     }
   },
   { _id: false }

@@ -5,6 +5,7 @@ import { deleteItem, setReservation } from "./api.js";
 import { loadWishlist } from "./wishlist.js";
 import { memberDropdown } from "./main.js";
 import { selectGiver } from "./events.js";
+import { showToast } from "./ui.js";
 
 export function applyTheme() {
   document.body.classList.toggle("light", state.theme === "light");
@@ -47,7 +48,7 @@ function createBadge(item) {
 
   badge.className = `badge ${item.reserved ? "badge--warning" : "badge--success"}`;
   badge.textContent = item.reserved
-    ? `Занят: ${item.reservedByName || "кто-то"}`
+    ? "Занят"
     : "Свободен";
 
   return badge;
@@ -84,11 +85,19 @@ function createCard(item, memberName) {
   if (state.mode === "friend") {
     const button = document.createElement("button");
 
-    const isMyReservation = item.reservedBy === state.activeGiverId;
+    const isAuthorized = Boolean(
+      state.activeGiverId &&
+      state.activeGiverToken
+    );
 
-    if (!state.activeGiverId) {
+    const isMyReservation = Boolean(
+      item.reservedBy === state.activeGiverId &&
+      isAuthorized
+    );
+
+    if (!isAuthorized) {
       button.className = "btn--reserve";
-      button.textContent = "Сначала выбери себя";
+      button.textContent = "Выбери себя";
       button.disabled = true;
     } else if (!item.reserved) {
       button.className = "btn--reserve";
@@ -103,8 +112,8 @@ function createCard(item, memberName) {
     }
 
     button.addEventListener("click", async () => {
-      if (!state.activeGiverId) {
-        alert("Сначала выбери, кто дарит");
+      if (!state.activeGiverId || !state.activeGiverToken) {
+        showToast("Сначала выбери себя и подтверди PIN", "warning");
         return;
       }
 
@@ -113,12 +122,18 @@ function createCard(item, memberName) {
           state.wishlist.id,
           item.itemId,
           !item.reserved,
-          state.activeGiverId
+          state.activeGiverId,
+          state.activeGiverToken
         );
 
         await loadWishlist();
+
+        showToast(
+          item.reserved ? "Бронь снята" : "Подарок забронирован",
+          "success"
+        );
       } catch (error) {
-        alert(error.message);
+        showToast(error.message, "error");
       }
     });
 
@@ -134,8 +149,9 @@ function createCard(item, memberName) {
       try {
         await deleteItem(state.wishlist.id, item.itemId, ownerToken);
         await loadWishlist();
+        showToast("Подарок удалён", "success");
       } catch (error) {
-        alert(error.message);
+        showToast(error.message, "error");
       }
     });
 
@@ -304,7 +320,7 @@ function setupBaseView() {
   dom.listDescription.textContent =
     state.mode === "owner"
       ? "Добавляй подарки, удаляй лишнее и делись ссылкой."
-      : "Выбери себя, участника и забронируй подарок.";
+      : "Выбери себя, подтверди PIN и забронируй подарок.";
 
   if (!state.activeMemberId && state.wishlist.members.length) {
     state.activeMemberId = state.wishlist.members[0].memberId;

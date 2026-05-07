@@ -8,7 +8,20 @@ export const state = {
   mode: wishlistId ? (ownerToken ? "owner" : "friend") : "create",
   wishlist: null,
   activeMemberId: "",
-  activeGiverId: ""
+  activeGiverId: "",
+  activeGiverToken: ""
 };
 
 export const draftMembers = [];
+
+export function getGiverStorageKey(wishlistId, giverId) {
+  return `wishlist_giver_token_${wishlistId}_${giverId}`;
+}
+
+export function saveGiverToken(wishlistId, giverId, token) {
+  localStorage.setItem(getGiverStorageKey(wishlistId, giverId), token);
+}
+
+export function loadGiverToken(wishlistId, giverId) {
+  return localStorage.getItem(getGiverStorageKey(wishlistId, giverId)) || "";
+}

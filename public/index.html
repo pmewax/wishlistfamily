@@ -107,8 +107,14 @@
               <div class="field field--wide">
                 <label for="itemUrlInput">Ссылка WB или артикул</label>
                 <div class="parser-row">
-                  <input id="itemUrlInput" type="text" placeholder="https://www.wildberries.ru/catalog/... или 758042925" />
-                  <button id="parseWbBtn" class="btn btn--secondary" type="button">Заполнить с WB</button>
+                  <input
+                    id="itemUrlInput"
+                    type="text"
+                    placeholder="https://www.wildberries.ru/catalog/... или 758042925"
+                  />
+                  <button id="parseWbBtn" class="btn btn--secondary" type="button">
+                    Заполнить с WB
+                  </button>
                 </div>
               </div>
 
@@ -139,14 +145,16 @@
           <section id="friendNote" class="panel friend-note hidden">
             <div class="friend-note__icon">🎉</div>
             <h2 class="panel__title">Выбери подарок и забронируй его</h2>
-            <p class="panel__text">Сначала выбери, кто будет дарить, потом забронируй подарок.</p>
+            <p class="panel__text">
+              Сначала выбери, кто будет дарить, подтверди PIN-код, потом забронируй подарок.
+            </p>
           </section>
 
           <section id="giverGate" class="panel giver-gate hidden">
             <div class="panel__head">
               <h2 class="panel__title">Кто будет дарить?</h2>
               <p class="panel__text">
-                Выбери своё имя или добавь новое. Бронь будет закреплена за выбранным человеком.
+                Выбери своё имя или добавь новое. Для защиты бронирования используется PIN-код из 4 цифр.
               </p>
             </div>
 
@@ -157,7 +165,22 @@
             <div id="giverList" class="giver-list"></div>
 
             <div class="giver-form">
-              <input id="giverNameInput" type="text" placeholder="Например: Артём" />
+              <input
+                id="giverNameInput"
+                type="text"
+                placeholder="Имя дарителя"
+                autocomplete="off"
+              />
+
+              <input
+                id="giverPinInput"
+                type="password"
+                inputmode="numeric"
+                maxlength="4"
+                placeholder="PIN"
+                autocomplete="off"
+              />
+
               <button id="addGiverBtn" class="btn btn--secondary" type="button">
                 Добавить себя
               </button>
@@ -184,6 +207,45 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div id="toastRoot" class="toast-root"></div>
+
+  <div id="pinModal" class="modal hidden">
+    <div class="modal__backdrop" id="pinModalBackdrop"></div>
+
+    <div class="modal__card">
+      <div class="modal__head">
+        <div>
+          <h2 class="modal__title">Введите PIN</h2>
+          <p id="pinModalText" class="modal__text">
+            Подтверди PIN-код дарителя.
+          </p>
+        </div>
+
+        <button id="pinModalClose" class="modal__close" type="button">×</button>
+      </div>
+
+      <input
+        id="pinModalInput"
+        class="modal__pin"
+        type="password"
+        inputmode="numeric"
+        maxlength="4"
+        placeholder="••••"
+        autocomplete="off"
+      />
+
+      <div class="modal__actions">
+        <button id="pinModalCancel" class="btn btn--secondary" type="button">
+          Отмена
+        </button>
+
+        <button id="pinModalSubmit" class="btn btn--primary" type="button">
+          Подтвердить
+        </button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="./js/main.js"></script>

@@ -2,8 +2,21 @@ import crypto from "crypto";
 import Wishlist from "../models/Wishlist.js";
 import { generateToken } from "../utils/tokens.js";
 
+const MAX_GIVERS = 5;
+
 function makeId(prefix) {
   return `${prefix}_${crypto.randomBytes(8).toString("hex")}`;
+}
+
+function hashValue(value, salt = "") {
+  return crypto
+    .createHash("sha256")
+    .update(`${salt}:${value}`)
+    .digest("hex");
+}
+
+function isValidPin(pin) {
+  return /^\d{4}$/.test(String(pin || ""));
 }
 
 function isHttpUrl(value) {
@@ -52,7 +65,10 @@ function publicWishlist(wishlist) {
     occasionKey: wishlist.occasionKey,
     occasionLabel: wishlist.occasionLabel,
     members: wishlist.members || [],
-    givers: wishlist.givers || [],
+    givers: (wishlist.givers || []).map((giver) => ({
+      giverId: giver.giverId,
+      name: giver.name
+    })),
     items: wishlist.items || []
   };
 }
@@ -215,9 +231,14 @@ export async function addGiver(req, res) {
   try {
     const { id } = req.params;
     const name = String(req.body.name || "").trim();
+    const pin = String(req.body.pin || "").trim();
 
     if (!name) {
       return res.status(400).json({ message: "Имя обязательно" });
+    }
+
+    if (!isValidPin(pin)) {
+      return res.status(400).json({ message: "PIN должен состоять из 4 цифр" });
     }
 
     const wishlist = await Wishlist.findById(id);
@@ -231,20 +252,26 @@ export async function addGiver(req, res) {
     );
 
     if (existing) {
-      return res.json({
-        message: "Даритель уже существует",
-        giver: existing,
-        givers: wishlist.givers
+      return res.status(400).json({
+        message: "Такой даритель уже существует. Выбери его из списка и введи PIN."
       });
     }
 
-    if (wishlist.givers.length >= 3) {
-      return res.status(400).json({ message: "Можно добавить максимум 3 дарителя" });
+    if (wishlist.givers.length >= MAX_GIVERS) {
+      return res.status(400).json({
+        message: `Можно добавить максимум ${MAX_GIVERS} дарителей`
+      });
     }
+
+    const pinSalt = generateToken(8);
+    const giverToken = generateToken(24);
 
     const giver = {
       giverId: makeId("giver"),
-      name
+      name,
+      pinSalt,
+      pinHash: hashValue(pin, pinSalt),
+      tokenHash: hashValue(giverToken)
     };
 
     wishlist.givers.push(giver);
@@ -253,18 +280,72 @@ export async function addGiver(req, res) {
 
     return res.status(201).json({
       message: "Даритель добавлен",
-      giver,
-      givers: wishlist.givers
+      giver: {
+        giverId: giver.giverId,
+        name: giver.name
+      },
+      giverToken,
+      givers: publicWishlist(wishlist).givers
     });
   } catch {
     return res.status(500).json({ message: "Ошибка добавления дарителя" });
   }
 }
 
+export async function loginGiver(req, res) {
+  try {
+    const { id } = req.params;
+    const giverId = String(req.body.giverId || "").trim();
+    const pin = String(req.body.pin || "").trim();
+
+    if (!giverId) {
+      return res.status(400).json({ message: "Даритель не выбран" });
+    }
+
+    if (!isValidPin(pin)) {
+      return res.status(400).json({ message: "PIN должен состоять из 4 цифр" });
+    }
+
+    const wishlist = await Wishlist.findById(id);
+
+    if (!wishlist) {
+      return res.status(404).json({ message: "Список не найден" });
+    }
+
+    const giver = wishlist.givers.find((g) => g.giverId === giverId);
+
+    if (!giver) {
+      return res.status(404).json({ message: "Даритель не найден" });
+    }
+
+    const pinHash = hashValue(pin, giver.pinSalt);
+
+    if (pinHash !== giver.pinHash) {
+      return res.status(403).json({ message: "Неверный PIN" });
+    }
+
+    const giverToken = generateToken(24);
+    giver.tokenHash = hashValue(giverToken);
+
+    await wishlist.save();
+
+    return res.json({
+      message: "PIN подтверждён",
+      giver: {
+        giverId: giver.giverId,
+        name: giver.name
+      },
+      giverToken
+    });
+  } catch {
+    return res.status(500).json({ message: "Ошибка входа дарителя" });
+  }
+}
+
 export async function toggleReservation(req, res) {
   try {
     const { id, itemId } = req.params;
-    const { reserved, giverId } = req.body;
+    const { reserved, giverId, giverToken } = req.body;
 
     const wishlist = await Wishlist.findById(id);
 
@@ -282,6 +363,12 @@ export async function toggleReservation(req, res) {
 
     if (!giver) {
       return res.status(400).json({ message: "Сначала выбери, кто дарит" });
+    }
+
+    if (!giverToken || hashValue(giverToken) !== giver.tokenHash) {
+      return res.status(403).json({
+        message: "Нужно подтвердить PIN дарителя"
+      });
     }
 
     const needReserve = Boolean(reserved);
@@ -346,9 +433,17 @@ function buildWbPaths(article, basketNumber) {
   const part = Math.floor(nm / 1000);
   const basket = String(basketNumber).padStart(2, "0");
 
+  const baseUrl = `https://basket-${basket}.wbcontent.net/vol${vol}/part${part}/${article}`;
+
   return {
-    cardUrl: `https://basket-${basket}.wbcontent.net/vol${vol}/part${part}/${article}/info/ru/card.json`,
-    imageUrl: `https://basket-${basket}.wbcontent.net/vol${vol}/part${part}/${article}/images/c516x688/1.webp`
+    cardUrl: `${baseUrl}/info/ru/card.json`,
+    imageUrl: `${baseUrl}/images/big/1.webp`,
+    images: [
+      `${baseUrl}/images/big/1.webp`,
+      `${baseUrl}/images/c516x688/1.webp`,
+      `${baseUrl}/images/c246x328/1.webp`,
+      `${baseUrl}/images/tm/1.webp`
+    ]
   };
 }
 
@@ -381,7 +476,8 @@ async function tryFetchWbCard(article) {
       return {
         data,
         cardUrl: paths.cardUrl,
-        imageUrl: paths.imageUrl
+        imageUrl: paths.imageUrl,
+        images: paths.images
       };
     } catch {
       continue;
@@ -416,6 +512,7 @@ export async function parseWbProduct(req, res) {
       title: title || `Товар Wildberries ${article}`,
       url: `https://www.wildberries.ru/catalog/${article}/detail.aspx`,
       img: result.imageUrl,
+      images: result.images,
       cardUrl: result.cardUrl
     });
   } catch {
