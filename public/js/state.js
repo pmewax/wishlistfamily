@@ -14,14 +14,53 @@ export const state = {
 
 export const draftMembers = [];
 
-export function getGiverStorageKey(wishlistId, giverId) {
-  return `wishlist_giver_token_${wishlistId}_${giverId}`;
+export function getGiverStorageKey(wishlistId) {
+  return `wishlist_giver_token_${wishlistId}`;
 }
 
-export function saveGiverToken(wishlistId, giverId, token) {
-  localStorage.setItem(getGiverStorageKey(wishlistId, giverId), token);
+export function saveGiverToken(
+  wishlistId,
+  giverId,
+  token
+) {
+  const data = {
+    giverId,
+    token
+  };
+
+  localStorage.setItem(
+    getGiverStorageKey(wishlistId),
+    JSON.stringify(data)
+  );
 }
 
-export function loadGiverToken(wishlistId, giverId) {
-  return localStorage.getItem(getGiverStorageKey(wishlistId, giverId)) || "";
+export function loadGiverToken(
+  wishlistId,
+  giverId
+) {
+  try {
+    const raw = localStorage.getItem(
+      getGiverStorageKey(wishlistId)
+    );
+
+    if (!raw) {
+      return "";
+    }
+
+    const data = JSON.parse(raw);
+
+    if (data.giverId !== giverId) {
+      return "";
+    }
+
+    return data.token || "";
+  } catch {
+    return "";
+  }
+}
+
+export function clearGiverToken(wishlistId) {
+  localStorage.removeItem(
+    getGiverStorageKey(wishlistId)
+  );
 }

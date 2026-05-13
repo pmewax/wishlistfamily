@@ -116,6 +116,8 @@ button {
   backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--line);
   background: rgba(8, 12, 27, 0.56);
+  margin-inline: -15px;
+  padding-inline: 15px;
 }
 
 body.light .topbar {
@@ -755,6 +757,10 @@ input:focus {
     width: 44px;
     height: 44px;
     border-radius: 15px;
+  }
+
+  .page {
+  padding-inline: 15px;
   }
 
   .page-main {
