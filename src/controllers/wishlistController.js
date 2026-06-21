@@ -2,7 +2,7 @@ import crypto from "crypto";
 import Wishlist from "../models/Wishlist.js";
 import { generateToken } from "../utils/tokens.js";
 
-const MAX_GIVERS = 5;
+const MAX_GIVERS = 10;
 
 function makeId(prefix) {
   return `${prefix}_${crypto.randomBytes(8).toString("hex")}`;
