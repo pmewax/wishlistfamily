@@ -352,7 +352,6 @@ input:focus {
   border: 1px solid var(--line);
 }
 
-/* Основная сетка */
 .layout {
   display: grid;
   grid-template-columns: 420px minmax(0, 1fr);
@@ -640,7 +639,6 @@ input:focus {
   line-height: 1.5;
 }
 
-/* Dropdown */
 .fancy-dropdown {
   position: relative;
 }
@@ -706,7 +704,6 @@ input:focus {
   background: var(--panel-3);
 }
 
-/* Планшет */
 @media (max-width: 1100px) {
   .layout {
     grid-template-columns: 1fr;
@@ -724,7 +721,6 @@ input:focus {
   }
 }
 
-/* Телефон */
 @media (max-width: 720px) {
   .container {
     width: min(100% - 20px, 1200px);
@@ -888,7 +884,6 @@ input:focus {
   }
 }
 
-/* Очень маленький телефон */
 @media (max-width: 420px) {
   .container {
     width: min(100% - 14px, 1200px);
